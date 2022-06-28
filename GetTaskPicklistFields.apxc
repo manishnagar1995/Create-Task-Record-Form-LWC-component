@@ -1,0 +1,128 @@
+public class GetTaskPicklistFields {
+    
+    @AuraEnabled
+    public static string insertTask(Task  taskRecords){
+        system.debug('inserting==='+taskRecords);
+        //return [select id,Date__c, Time__c email from task where id=:task1.id];
+        try{
+            taskRecords.RecordtypeId = Schema.SObjectType.Task.getRecordTypeInfosByName().get('Phone').getRecordTypeId();
+            
+            insert taskRecords;
+            return 'Task Record '+taskRecords.Id+' Created.';
+        }catch(Exception ex){
+            system.debug('insertingsdfdfdf==='+ex.getMessage());
+            throw new AuraHandledException(ex.getMessage());
+        } 
+        
+    }
+    
+    public static List<picklistvalues> getPickListValuesIntoList(String ObjectName,String FieldApiName){
+        List<picklistvalues> pickListValuesList= new List<picklistvalues>();
+        
+        pickListValuesList.add(new picklistvalues('--None--','--None--'));
+        String strObjectName = ObjectName;
+        String strPicklistField = FieldApiName;
+        Map<String, String> mapPickListValues = new Map<String, String>();
+        Schema.SObjectType objSobjectType = Schema.getGlobalDescribe().get(strObjectName);
+        Schema.DescribeSObjectResult objDescribeSobject = objSobjectType.getDescribe();
+        Map<String, Schema.SObjectField> mapFields = objDescribeSobject.fields.getMap();
+        List<Schema.PicklistEntry> lstPickListValues = mapFields.get(strPicklistField).getDescribe().getPickListValues();
+        for (Schema.PicklistEntry objPickList : lstPickListValues) {
+            System.debug('Value = ' +objPickList.getValue() +' , Label = ' +objPickList.getLabel());
+            pickListValuesList.add(new picklistvalues(objPickList.getValue(),objPickList.getLabel()));
+            
+        }
+        System.debug('pickListValuesList = ' +pickListValuesList);
+        
+        return pickListValuesList;
+    }
+    
+    @AuraEnabled
+    public static List<RecordsData> fetchRecords(String objectName, String filterField, String searchString, String value) {
+        try {
+            List<RecordsData> recordsDataList = new List<RecordsData>();
+            String query = 'SELECT Id, ' + filterField + ' FROM '+objectName;
+            if(String.isNotBlank(value)) {
+                query += ' WHERE Id = \''+ value + '\' LIMIT 49999';
+            } else {
+                query += ' WHERE '+filterField+
+                    ' LIKE ' + '\'' + String.escapeSingleQuotes(searchString.trim()) + '%\' LIMIT 49999';
+            }
+            for(SObject s : Database.query(query)) {
+                recordsDataList.add( new RecordsData((String)s.get(filterField), (String)s.get('id')) );
+            }
+            return recordsDataList;
+        } catch (Exception err) {
+            if ( String.isNotBlank( err.getMessage() ) && err.getMessage().contains( 'error:' ) ) {
+                throw new AuraHandledException(err.getMessage().split('error:')[1].split(':')[0] + '.');
+            } else {
+                throw new AuraHandledException(err.getMessage());
+            }
+        }
+    }
+    
+    public class RecordsData {
+        @AuraEnabled public String label;
+        @AuraEnabled public String value;
+        public RecordsData(String label, String value) {
+            this.label = label;
+            this.value = value;
+        }
+    }
+    
+    
+    
+    @Auraenabled(cacheable=true)
+    public static WrapPicklist getAllpicklists(String OppID){
+        system.debug('recrodid'+OppID);
+        Opportunity opp=[Select id,Name From Opportunity where Id=:OppID limit 1];
+        
+        User usr=[Select id,Name From User where Id=:UserInfo.getUserId() limit 1];
+        
+        
+        WrapPicklist wrap = new WrapPicklist();
+        wrap.Status = getPickListValuesIntoList('Task','Status');
+        wrap.Task_Type = getPickListValuesIntoList('Task','Type');
+        wrap.Outcome = getPickListValuesIntoList('Task','Outcome__c');
+        wrap.Purpose = getPickListValuesIntoList('Task','Purpose__c');
+        wrap.Location = getPickListValuesIntoList('Task','Location__c');
+        system.debug('opp====='+opp.Id);
+        system.debug('opp====='+opp.Name);
+        wrap.currentRec =new picklistvalues(string.valueof(opp.Id),opp.Name);
+        
+        wrap.currentUserRec =new picklistvalues(string.valueof(usr.Id),usr.Name);
+        
+        //wrap.Purpose = getPickListValuesIntoList('Task','Status');
+        system.debug('status value '+wrap.Status);
+        return wrap;
+    }
+    public class picklistvalues {
+        @AuraEnabled
+        public String label {get; set;}
+        @AuraEnabled
+        public String value {get; set;}
+        
+        public picklistvalues(String values,String labels) {
+            value = values;
+            label = labels;
+        }
+    }
+    
+    public class WrapPicklist{
+        @AuraEnabled
+        public List<picklistvalues> Status {get; set;}
+        @AuraEnabled
+        public List<picklistvalues> Task_Type {get; set;}
+        @AuraEnabled
+        public List<picklistvalues> Outcome {get; set;}
+        @AuraEnabled
+        public List<picklistvalues> Purpose {get; set;}
+        @AuraEnabled
+        public List<picklistvalues> Location {get; set;}
+        @AuraEnabled
+        public picklistvalues currentRec {get; set;}
+        @AuraEnabled
+        public picklistvalues currentUserRec {get; set;}
+        
+    }
+}
