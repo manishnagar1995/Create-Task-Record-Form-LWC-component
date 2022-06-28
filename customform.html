@@ -1,0 +1,196 @@
+<template>
+   <!--Use template if:true to display/hide popup based on isModalOpen value--> 
+   <template if:true={isModalOpen}>
+      <div if:true={showHideSpinner}>
+         <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+      </div>
+      <header class="slds-modal__header">
+         <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+            <lightning-icon icon-name="utility:close"
+               alternative-text="close"
+               variant="inverse"
+               size="small" ></lightning-icon>
+            <span class="slds-assistive-text">Close</span>
+         </button>
+         <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Task</h2>
+      </header>
+      <!-- Modal/Popup Box LWC body starts here -->
+      <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+         <h3 class="slds-section__title slds-theme--shade primaryPaletteBorder test-id__section-header-container">
+            <span class="test-id__section-header-title section-header-title slds-p-horizontal--small slds-truncate"> Task Information</span>
+         </h3>
+         <div class="slds-grid slds-wrap">
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-input type="datetime"  value={newTaskRec.ActivityDate}  onchange={changeActivityDT}></lightning-input>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-combobox
+                  name="Task Type"
+                  label="Task Type"
+                  value={newTaskRec.Task_Type__c}
+                  options={TaskTypeOptions}
+                  onchange={handleTaskType}                       
+                  ></lightning-combobox>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-input type="text" label="Subject" value={newTaskRec.Subject__c}  onchange={handlersubject}  ></lightning-input>
+               <!-- <lightning-combobox
+                  name="Subject"
+                  label="Subject"
+                  value={newTaskRec.Subject__c}
+                  options={subjectPicklistOptions}
+                  onchange={handlersubject}                       
+                  ></lightning-combobox>-->
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-combobox
+                  name="Purpose"
+                  label="Purpose"
+                  value={newTaskRec.Purpose__c}
+                  options={PurposePicklistOptions}
+                  onchange={handlerpurpose}                       
+                  ></lightning-combobox>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-combobox
+                  name="Location"
+                  label="Location"
+                  value={newTaskRec.Location__c}
+                  options={locationPicklistOptions}
+                  onchange={handlerlocation}                       
+                  ></lightning-combobox>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-combobox
+                  name="Status"
+                  label="Status"
+                  value={newTaskRec.Status}
+                  options={statusPicklistOptions}
+                  onchange={handlerstatus}                       
+                  ></lightning-combobox>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12"></div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <lightning-combobox
+                  name="Outcome"
+                  label="Outcome"
+                  value={newTaskRec.Outcome__c}
+                  options={outcomePicklistOptions}
+                  onchange={handleroutcome}                       
+                  ></lightning-combobox>
+            </div>
+            <div class="colPadding slds-col slds-size_12-of-12">
+               <lightning-textarea name="Description"  value={newTaskRec.Description} label="Comments"  onchange={handlercomments}></lightning-textarea>
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <div class={className}>
+                  <template if:true={label}>
+                     <p class="slds-form-element__label">
+                        <template if:true={required}>
+                           <span class="requiredAsterisk">*</span>
+                        </template>
+                        {label}
+                     </p>
+                  </template>
+                  <div class="slds-combobox_container" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                     <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                        <!-- Search Input Box -->
+                        <template if:false={showPill}>
+                           <lightning-input disabled onchange={searchRecords} onclick={showRecords} onblur={blurEvent} class="inputBox" type="search" autocomplete="off" variant="label-hidden" placeholder={placeholder} ></lightning-input>
+                           <div if:true={showSpinner}>
+                              <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                           </div>
+                        </template>
+                        <!-- Selected Value Pill -->
+                        <div if:true={showPill} class="pillContainer">
+                           <lightning-pill class="fullWidth" label={selectedRecord.label} name={selectedRecord.value} onremove={removeItem}>
+                              <lightning-icon icon-name={iconName} alternative-text="icon" size="x-small"></lightning-icon>
+                           </lightning-pill>
+                        </div>
+                        <!-- Dropdown List -->
+                        <template if:true={showDropdown}>
+                           <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" >
+                              <ul class="slds-listbox slds-listbox_vertical recordListBox" >
+                                 <template if:false={message} >
+                                    <template for:each={recordsList} for:item="rec">
+                                       <li key={rec.value} data-key={rec.value} class="slds-listbox__item eachItem" onmousedown={selectItem}>
+                                          <div class="slds-media slds-listbox__option_entity">
+                                             <lightning-icon icon-name={iconName} alternative-text="icon" size="small"></lightning-icon>
+                                             <span class="verticalAlign slds-truncate">{rec.label}</span>
+                                          </div>
+                                       </li>
+                                    </template>
+                                 </template>
+                                 <template if:true={message} >
+                                    <li class="slds-listbox__item">
+                                       <span class="slds-media slds-listbox__option_entity">{message}</span>
+                                    </li>
+                                 </template>
+                              </ul>
+                           </div>
+                        </template>
+                     </div>
+                  </div>
+               </div>
+               <!-- <c-custom-lookup object-name="Opportunity" field-name="Name" label="Related To" placeholder="search Opportunity" icon-name="standard:opportunity" onlookupselected={handleOppSelection} prepopulate-rec={currentRecvalue}></c-custom-lookup>-->
+            </div>
+            <div class="colPadding slds-col slds-size_6-of-12">
+               <div class={className1}>
+                  <template if:true={label1}>
+                     <p class="slds-form-element__label">
+                        <template if:true={required1}>
+                           <span class="requiredAsterisk">*</span>
+                        </template>
+                        {label1}
+                     </p>
+                  </template>
+                  <div class="slds-combobox_container" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                     <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                        <template if:false={showPill1}>
+                           <lightning-input onchange={searchRecords1} onclick={showRecords1} onblur={blurEvent1} class="inputBox" type="search" autocomplete="off" variant="label-hidden" placeholder={placeholder1}></lightning-input>
+                           <div if:true={showSpinner1}>
+                              <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                           </div>
+                        </template>
+                        <div if:true={showPill} class="pillContainer">
+                           <lightning-pill class="fullWidth" label={selectedRecord1.label} name={selectedRecord1.value} onremove={removeItem1}>
+                              <lightning-icon icon-name={iconName1} alternative-text="icon" size="x-small"></lightning-icon>
+                           </lightning-pill>
+                        </div>
+                        <template if:true={showDropdown1}>
+                           <div class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" >
+                              <ul class="slds-listbox slds-listbox_vertical recordListBox" >
+                                 <template if:false={message1} >
+                                    <template for:each={recordsList1} for:item="rec">
+                                       <li key={rec.value} data-key={rec.value} class="slds-listbox__item eachItem" onmousedown={selectItem1}>
+                                          <div class="slds-media slds-listbox__option_entity">
+                                             <lightning-icon icon-name={iconName1} alternative-text="icon" size="small"></lightning-icon>
+                                             <span class="verticalAlign slds-truncate">{rec.label}</span>
+                                          </div>
+                                       </li>
+                                    </template>
+                                 </template>
+                                 <template if:true={message1} >
+                                    <li class="slds-listbox__item">
+                                       <span class="slds-media slds-listbox__option_entity">{message1}</span>
+                                    </li>
+                                 </template>
+                              </ul>
+                           </div>
+                        </template>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- Modal/Popup Box LWC footer starts here -->
+      <footer class="slds-modal__footer">
+         <button class="slds-button slds-button_brand" onclick={submitDetailsAndNew} title="Save">Save & New</button>
+         <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+         <button class="slds-button slds-button_brand" onclick={submitDetails} title="Save">Save</button>
+      </footer>
+      <!-- </div></section>
+         <div class="slds-backdrop slds-backdrop_open"></div>-->
+   </template>
+</template>
